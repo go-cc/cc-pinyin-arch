@@ -237,39 +237,3 @@ func Pinyin(s string, a Args) [][]string {
 	}
 	return pys
 }
-
-// LazyPinyin 汉字转拼音，与 `Pinyin` 的区别是：
-// 返回值类型不同，并且不支持多音字模式，每个汉字只取第一个音.
-func LazyPinyin(s string, a Args) []string {
-	a.Heteronym = false
-	pys := []string{}
-	for _, v := range Pinyin(s, a) {
-		pys = append(pys, v[0])
-	}
-	return pys
-}
-
-// Slug join `LazyPinyin` 的返回值.
-// 建议改用 https://github.com/mozillazg/go-slugify
-func Slug(s string, a Args) string {
-	separator := a.Separator
-	return strings.Join(LazyPinyin(s, a), separator)
-}
-
-// Convert 跟 Pinyin 的唯一区别就是 a 参数可以是 nil
-func Convert(s string, a *Args) [][]string {
-	if a == nil {
-		args := NewArgs()
-		a = &args
-	}
-	return Pinyin(s, *a)
-}
-
-// LazyConvert 跟 LazyPinyin 的唯一区别就是 a 参数可以是 nil
-func LazyConvert(s string, a *Args) []string {
-	if a == nil {
-		args := NewArgs()
-		a = &args
-	}
-	return LazyPinyin(s, *a)
-}

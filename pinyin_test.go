@@ -172,51 +172,6 @@ func TestNoneHans(t *testing.T) {
 	}
 }
 
-func TestLazyPinyin(t *testing.T) {
-	s := "中国人"
-	v := LazyPinyin(s, Args{})
-	value := []string{"zhong", "guo", "ren"}
-	if !reflect.DeepEqual(v, value) {
-		t.Errorf("Expected %s, got %s", value, v)
-	}
-
-	s = "中国人abc"
-	v = LazyPinyin(s, Args{})
-	value = []string{"zhong", "guo", "ren"}
-	if !reflect.DeepEqual(v, value) {
-		t.Errorf("Expected %s, got %s", value, v)
-	}
-}
-
-func TestSlug(t *testing.T) {
-	s := "中国人"
-	v := Slug(s, Args{})
-	value := "zhongguoren"
-	if v != value {
-		t.Errorf("Expected %s, got %s", value, v)
-	}
-
-	v = Slug(s, Args{Separator: ","})
-	value = "zhong,guo,ren"
-	if v != value {
-		t.Errorf("Expected %s, got %s", value, v)
-	}
-
-	a := NewArgs()
-	v = Slug(s, a)
-	value = "zhong-guo-ren"
-	if v != value {
-		t.Errorf("Expected %s, got %s", value, v)
-	}
-
-	s = "中国人abc，,中"
-	v = Slug(s, a)
-	value = "zhong-guo-ren-zhong"
-	if v != value {
-		t.Errorf("Expected %s, got %s", value, v)
-	}
-}
-
 func TestFinal(t *testing.T) {
 	value := "an"
 	v := final("an")
@@ -359,34 +314,4 @@ func TestUpdated(t *testing.T) {
 		{"侵略", Args{Style: FinalsTone3}, [][]string{{"in1"}, {"ve4"}}},
 	}
 	testPinyinUpdate(t, testData, Pinyin)
-}
-
-func TestConvert(t *testing.T) {
-	s := "中国人"
-	v := Convert(s, nil)
-	value := [][]string{{"zhong"}, {"guo"}, {"ren"}}
-	if !reflect.DeepEqual(v, value) {
-		t.Errorf("Expected %s, got %s", value, v)
-	}
-
-	a := NewArgs()
-	v = Convert(s, &a)
-	if !reflect.DeepEqual(v, value) {
-		t.Errorf("Expected %s, got %s", value, v)
-	}
-}
-
-func TestLazyConvert(t *testing.T) {
-	s := "中国人"
-	v := LazyConvert(s, nil)
-	value := []string{"zhong", "guo", "ren"}
-	if !reflect.DeepEqual(v, value) {
-		t.Errorf("Expected %s, got %s", value, v)
-	}
-
-	a := NewArgs()
-	v = LazyConvert(s, &a)
-	if !reflect.DeepEqual(v, value) {
-		t.Errorf("Expected %s, got %s", value, v)
-	}
 }

@@ -6,12 +6,6 @@ import (
 	"github.com/go-cc/cc-pinyin"
 )
 
-func ExampleConvert() {
-	hans := "中国人"
-	fmt.Println("default:", pinyin.Convert(hans, nil))
-	// Output: default: [[zhong] [guo] [ren]]
-}
-
 func ExamplePinyin_default() {
 	hans := "中国人"
 	a := pinyin.NewArgs()
@@ -120,18 +114,4 @@ func ExamplePinyin_fallbackCustom2() {
 	}
 	fmt.Println(pinyin.Pinyin(hans, a))
 	// Output: [[zhong] [guo] [ren] [a] [i] [u]]
-}
-
-func ExampleLazyPinyin() {
-	hans := "中国人"
-	a := pinyin.NewArgs()
-	fmt.Println(pinyin.LazyPinyin(hans, a))
-	// Output: [zhong guo ren]
-}
-
-func ExampleSlug() {
-	hans := "中国人"
-	a := pinyin.NewArgs()
-	fmt.Println(pinyin.Slug(hans, a))
-	// Output: zhong-guo-ren
 }
