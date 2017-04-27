@@ -181,37 +181,28 @@ func (a Pinyin) toFixed(p string) string {
 	return py
 }
 
-// ConvertRune 把单个 `rune` 类型的汉字转换为拼音.
-// If enabled Heteronym, then separate the returns with '/'.
-// E.g., for input like "我的银行不行", the output is
-// wo de yin hang/xing bu hang/xing.
-func (a Pinyin) ConvertRune(r rune) string {
-	if r <= '~' {
-		return string(r)
-	}
-	value, ok := PinyinDict[int(r)]
-	if !ok {
-		return string(r)
-	}
-	firstComma := strings.Index(value, ",")
-	if !a.Heteronym && firstComma > 0 {
-		value = value[:firstComma]
-	}
-	if a.Heteronym && firstComma > 0 {
-		value = strings.Replace(value, ",", "/", -1)
-	}
-	return a.toFixed(value)
-}
-
 // Convert 汉字转拼音，支持多音字模式.
 func (a Pinyin) Convert(s string) string {
 	pys := bytes.NewBufferString("")
 	for _, r := range s {
-		py := a.ConvertRune(r)
-		pys.WriteString(py)
-		if len(py) > 1 {
-			pys.WriteString(a.Separator)
+		if r <= '~' {
+			pys.WriteString(string(r))
+			continue
 		}
+		value, ok := PinyinDict[int(r)]
+		if !ok {
+			pys.WriteString(string(r))
+			continue
+		}
+		firstComma := strings.Index(value, ",")
+		if !a.Heteronym && firstComma > 0 {
+			value = value[:firstComma]
+		}
+		if a.Heteronym && firstComma > 0 {
+			value = strings.Replace(value, ",", "/", -1)
+		}
+		py := a.toFixed(value)
+		pys.WriteString(py + a.Separator)
 	}
 	return pys.String()
 }
