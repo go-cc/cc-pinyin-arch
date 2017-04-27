@@ -1,6 +1,7 @@
 package pinyin
 
 import (
+	"bytes"
 	"regexp"
 	"strings"
 )
@@ -27,18 +28,6 @@ const (
 	FinalsTone3 = 9 // 韵母风格3，带声调，声调在各个拼音之后，用数字 [1-4] 进行表示。如： ong1 uo2
 )
 
-// 拼音风格(兼容之前的版本)
-const (
-	NORMAL       = Normal
-	TONE         = Tone
-	TONE2        = Tone2
-	INITIALS     = Initials
-	FIRST_LETTER = FirstLetter
-	FINALS       = Finals
-	FINALS_TONE  = FinalsTone
-	FINALS_TONE2 = FinalsTone2
-)
-
 // 声母表
 var initialArray = strings.Split(
 	"b,p,m,f,d,t,n,l,g,k,h,j,q,x,r,zh,ch,sh,z,c,s",
@@ -63,8 +52,8 @@ var reTone2 = regexp.MustCompile("([aeoiuvnm])([1-4])$")
 // 匹配 Tone2 中标识韵母声调的正则表达式
 var reTone3 = regexp.MustCompile("^([a-z]+)([1-4])([a-z]*)$")
 
-// Args 配置信息
-type Args struct {
+// Pinyin with 配置信息
+type Pinyin struct {
 	Style     int    // 拼音风格（默认： Normal)
 	Heteronym bool   // 是否启用多音字模式（默认：禁用）
 	Separator string // Slug 中使用的分隔符（默认：-)
@@ -77,7 +66,7 @@ var Style = Normal
 var Heteronym = false
 
 // Separator 默认配置： `Slug` 中 Join 所用的分隔符
-var Separator = "-"
+var Separator = " "
 
 var finalExceptionsMap = map[string]string{
 	"ū": "ǖ",
@@ -88,9 +77,13 @@ var finalExceptionsMap = map[string]string{
 var reFinalExceptions = regexp.MustCompile("^(j|q|x)(ū|ú|ǔ|ù)$")
 var reFinal2Exceptions = regexp.MustCompile("^(j|q|x)u(\\d?)$")
 
-// NewArgs 返回包含默认配置的 `Args`
-func NewArgs() Args {
-	return Args{Style, Heteronym, Separator}
+// NewPinyin 返回包含默认配置的 `Pinyin`
+func NewPinyin() Pinyin {
+	return Pinyin{Style, Heteronym, Separator}
+}
+
+func (a *Pinyin) SetStyle(style int) {
+	a.Style = style
 }
 
 // 获取单个拼音中的声母
@@ -141,7 +134,7 @@ func handleYW(p string) string {
 	return p
 }
 
-func toFixed(p string, a Args) string {
+func (a Pinyin) toFixed(p string) string {
 	if a.Style == Initials {
 		return initial(p)
 	}
@@ -188,38 +181,37 @@ func toFixed(p string, a Args) string {
 	return py
 }
 
-func applyStyle(p []string, a Args) []string {
-	newP := []string{}
-	for _, v := range p {
-		newP = append(newP, toFixed(v, a))
+// ConvertRune 把单个 `rune` 类型的汉字转换为拼音.
+// If enabled Heteronym, then separate the returns with '/'.
+// E.g., for input like "我的银行不行", the output is
+// wo de yin hang/xing bu hang/xing.
+func (a Pinyin) ConvertRune(r rune) string {
+	if r <= '~' {
+		return string(r)
 	}
-	return newP
-}
-
-// SinglePinyin 把单个 `rune` 类型的汉字转换为拼音.
-func SinglePinyin(r rune, a Args) []string {
 	value, ok := PinyinDict[int(r)]
-	pys := []string{}
-	if ok {
-		pys = strings.Split(value, ",")
+	if !ok {
+		return string(r)
 	}
-	if len(pys) > 0 {
-		if !a.Heteronym {
-			pys = pys[:1]
-		}
-		return applyStyle(pys, a)
+	firstComma := strings.Index(value, ",")
+	if !a.Heteronym && firstComma > 0 {
+		value = value[:firstComma]
 	}
-	return pys
+	if a.Heteronym && firstComma > 0 {
+		value = strings.Replace(value, ",", "/", -1)
+	}
+	return a.toFixed(value)
 }
 
-// Pinyin 汉字转拼音，支持多音字模式.
-func Pinyin(s string, a Args) [][]string {
-	pys := [][]string{}
+// Convert 汉字转拼音，支持多音字模式.
+func (a Pinyin) Convert(s string) string {
+	pys := bytes.NewBufferString("")
 	for _, r := range s {
-		py := SinglePinyin(r, a)
-		if len(py) > 0 {
-			pys = append(pys, py)
+		py := a.ConvertRune(r)
+		pys.WriteString(py)
+		if len(py) > 1 {
+			pys.WriteString(a.Separator)
 		}
 	}
-	return pys
+	return pys.String()
 }
