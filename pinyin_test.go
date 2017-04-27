@@ -180,55 +180,6 @@ func TestFinal(t *testing.T) {
 	}
 }
 
-func TestFallback(t *testing.T) {
-	hans := "中国人abc"
-	testData := []testCase{
-		// default
-		{
-			NewArgs(),
-			[][]string{
-				{"zhong"},
-				{"guo"},
-				{"ren"},
-			},
-		},
-		// custom
-		{
-			Args{
-				Fallback: func(r rune, a Args) []string {
-					return []string{"la"}
-				},
-			},
-			[][]string{
-				{"zhong"},
-				{"guo"},
-				{"ren"},
-				{"la"},
-				{"la"},
-				{"la"},
-			},
-		},
-		// custom
-		{
-			Args{
-				Heteronym: true,
-				Fallback: func(r rune, a Args) []string {
-					return []string{"la", "wo"}
-				},
-			},
-			[][]string{
-				{"zhong", "zhong"},
-				{"guo"},
-				{"ren"},
-				{"la", "wo"},
-				{"la", "wo"},
-				{"la", "wo"},
-			},
-		},
-	}
-	testPinyin(t, hans, testData, Pinyin)
-}
-
 type testItem struct {
 	hans   string
 	args   Args

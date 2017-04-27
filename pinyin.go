@@ -68,10 +68,6 @@ type Args struct {
 	Style     int    // 拼音风格（默认： Normal)
 	Heteronym bool   // 是否启用多音字模式（默认：禁用）
 	Separator string // Slug 中使用的分隔符（默认：-)
-
-	// 处理没有拼音的字符（默认忽略没有拼音的字符）
-	// 函数返回的 slice 的长度为0 则表示忽略这个字符
-	Fallback func(r rune, a Args) []string
 }
 
 // Style 默认配置：风格
@@ -82,11 +78,6 @@ var Heteronym = false
 
 // Separator 默认配置： `Slug` 中 Join 所用的分隔符
 var Separator = "-"
-
-// Fallback 默认配置: 如何处理没有拼音的字符(忽略这个字符)
-var Fallback = func(r rune, a Args) []string {
-	return []string{}
-}
 
 var finalExceptionsMap = map[string]string{
 	"ū": "ǖ",
@@ -99,7 +90,7 @@ var reFinal2Exceptions = regexp.MustCompile("^(j|q|x)u(\\d?)$")
 
 // NewArgs 返回包含默认配置的 `Args`
 func NewArgs() Args {
-	return Args{Style, Heteronym, Separator, Fallback}
+	return Args{Style, Heteronym, Separator}
 }
 
 // 获取单个拼音中的声母
@@ -207,15 +198,10 @@ func applyStyle(p []string, a Args) []string {
 
 // SinglePinyin 把单个 `rune` 类型的汉字转换为拼音.
 func SinglePinyin(r rune, a Args) []string {
-	if a.Fallback == nil {
-		a.Fallback = Fallback
-	}
 	value, ok := PinyinDict[int(r)]
 	pys := []string{}
 	if ok {
 		pys = strings.Split(value, ",")
-	} else {
-		pys = a.Fallback(r, a)
 	}
 	if len(pys) > 0 {
 		if !a.Heteronym {
