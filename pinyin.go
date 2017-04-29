@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"regexp"
 	"strings"
+
+	"github.com/go-shaper/shaper"
 )
 
 // VERSION defines the running build id.
@@ -77,12 +79,11 @@ type Style struct {
 // Pinyin with 配置信息
 type Pinyin struct {
 	Style
-	Polyphone bool   // 是否启用多音字模式（默认：禁用）
 	Separator string // 使用的分隔符（默认：" ")
-}
+	Polyphone bool   // 是否启用多音字模式（默认：禁用）
 
-// Separator 默认配置：所用的分隔符
-var Separator = " "
+	shaper *Shaper
+}
 
 var finalExceptionsMap = map[string]string{
 	"ū": "ǖ",
@@ -94,44 +95,33 @@ var reFinalExceptions = regexp.MustCompile("^(j|q|x)(ū|ú|ǔ|ù)$")
 var reFinal2Exceptions = regexp.MustCompile("^(j|q|x)u(\\d?)$")
 
 // NewPinyin 返回包含默认配置的 `Pinyin`
-func NewPinyin() Pinyin {
-	return Pinyin{Separator: Separator}
+func NewPinyin(s Style, separator string, polyphone bool) Pinyin {
+	a := Pinyin{Style: s,
+		//	a = Pinyin{
+		Separator: separator,
+		Polyphone: polyphone,
+	}
+	a.shaper = NewShaper()
+	if a.Truncate != Normal {
+		a.shaper.ApplyTruncate(a)
+	}
+	if a.Tone != Tone3 {
+		a.shaper.ApplyToneShaping(a)
+	}
+	return a
 }
 
-func (a *Pinyin) SetStyle(s Style) {
-	a.Tone = s.Tone
-	a.Truncate = s.Truncate
+////////////////////////////////////////////////////////////////////////////
+// Extending shaper.Shaper
+
+// Shaper extends shaper.Shaper
+type Shaper struct {
+	*shaper.Shaper
 }
 
-// 获取单个拼音中的声母
-func initial(p string) string {
-	s := ""
-	for _, v := range initialArray {
-		if strings.HasPrefix(p, v) {
-			s = v
-			break
-		}
-	}
-	return s
-}
-
-// 获取单个拼音中的韵母
-func final(p string) string {
-	n := initial(p)
-	if n == "" {
-		return handleYW(p)
-	}
-
-	// 特例 j/q/x
-	matches := reFinalExceptions.FindStringSubmatch(p)
-	// jū -> jǖ
-	if len(matches) == 3 && matches[1] != "" && matches[2] != "" {
-		v, _ := finalExceptionsMap[matches[2]]
-		return v
-	}
-	// ju -> jv, ju1 -> jv1
-	p = reFinal2Exceptions.ReplaceAllString(p, "${1}v$2")
-	return strings.Join(strings.SplitN(p, n, 2), "")
+// NewShaper makes a new Shaper filter
+func NewShaper() *Shaper {
+	return &Shaper{Shaper: shaper.NewFilter()}
 }
 
 // 处理 y, w
@@ -151,51 +141,91 @@ func handleYW(p string) string {
 	return p
 }
 
-func (a Pinyin) toFixed(p string) string {
-	if a.Truncate == Initials {
-		return initial(p)
-	}
-	origP := p
-
-	// 替换拼音中的带声调字符
-	py := rePhoneticSymbol.ReplaceAllStringFunc(p, func(m string) string {
-		symbol, _ := phoneticSymbol[m]
-		switch a.Tone {
-		// 不包含声调
-		case Normal:
-			// 去掉声调: a1 -> a
-			m = reTone2.ReplaceAllString(symbol, "$1")
-		case Tone2, Tone1:
-			// 返回使用数字标识声调的字符
-			m = symbol
-		default:
-			// 声调在头上
+func (sp *Shaper) ApplyToneShaping(a Pinyin) *Shaper {
+	sp.AddFilter(func(p string) string {
+		if a.Truncate == Initials || a.Tone == Tone3 {
+			// already shortened or no need to change
+			return p
 		}
-		return m
-	})
 
-	switch a.Tone {
-	// 将声调移动到最后
-	case Tone1:
-		py = reTone1.ReplaceAllString(py, "$1$3$2")
-	}
-	switch a.Truncate {
-	// 首字母
-	case FirstLetter:
-		py = py[:1]
-	// 韵母
-	case Finals:
+		// 替换拼音中的带声调字符
+		py := rePhoneticSymbol.ReplaceAllStringFunc(p, func(m string) string {
+			symbol, _ := phoneticSymbol[m]
+			switch a.Tone {
+			// 不包含声调
+			case Normal:
+				// 去掉声调: a1 -> a
+				m = reTone2.ReplaceAllString(symbol, "$1")
+			case Tone2, Tone1:
+				// 返回使用数字标识声调的字符
+				m = symbol
+			default:
+				// 声调在头上
+			}
+			return m
+		})
+
+		switch a.Tone {
+		// 将声调移动到最后
+		case Tone1:
+			py = reTone1.ReplaceAllString(py, "$1$3$2")
+		}
+		return py
+	})
+	return sp
+}
+
+func (sp *Shaper) ApplyTruncate(a Pinyin) *Shaper {
+	sp.AddFilter(func(p string) string {
+		if a.Truncate == FirstLetter {
+			// 首字母
+			return p[:1]
+		}
+
+		// 获取拼音中的声母
+		s, y := "", ""
+		for _, v := range initialArray {
+			if strings.HasPrefix(p, v) {
+				s = v
+				y = p[len(s):]
+				break
+			}
+		}
+
+		if a.Truncate == Initials {
+			// 声母风格
+			return s
+		}
+
+		// 韵母风格
+
 		// 转换为 []rune unicode 编码用于获取第一个拼音字符
 		// 因为 string 是 utf-8 编码不方便获取第一个拼音字符
-		rs := []rune(origP)
+		rs := []rune(p)
 		switch string(rs[0]) {
 		// 因为鼻音没有声母所以不需要去掉声母部分
 		case "ḿ", "ń", "ň", "ǹ":
-		default:
-			py = final(py)
+			return p
 		}
-	}
-	return py
+
+		// 获取拼音中的韵母
+		if s == "" {
+			y = handleYW(p)
+		}
+
+		// 特例 j/q/x
+		matches := reFinalExceptions.FindStringSubmatch(p)
+		// jū -> jǖ
+		if len(matches) == 3 && matches[1] != "" && matches[2] != "" {
+			y, _ = finalExceptionsMap[matches[2]]
+		} else {
+			// ju -> jv, ju1 -> jv1
+			p = reFinal2Exceptions.ReplaceAllString(p, "${1}v$2")
+			y = strings.Join(strings.SplitN(p, s, 2), "")
+		}
+		return y
+	})
+	return sp
 }
 
 // Convert 汉字转拼音，支持多音字模式.
@@ -222,7 +252,7 @@ func (a Pinyin) Convert(s string) string {
 		if a.Polyphone && firstComma > 0 {
 			value = strings.Replace(value, ",", "/", -1)
 		}
-		py := a.toFixed(value)
+		py := a.shaper.Process(value)
 		pys.WriteString(py + a.Separator)
 	}
 	return pys.String()

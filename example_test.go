@@ -12,28 +12,31 @@ func Example_output() {
 	s := `名著：《红楼梦》〖清〗曹雪芹 著、高鹗 续／『人民文学』出版社／1996—9月30日／59.70【元】，《三国演义》〖明〗罗贯中。`
 	_ = s
 	hans := "中国人的〖中国银行〗，很.行.。"
+	// Separator 默认配置：所用的分隔符
+	var Separator = " "
+	var a pinyin.Pinyin
 
 	// 默认
-	a := pinyin.NewPinyin()
+	a = pinyin.NewPinyin(pinyin.Style{}, Separator, false)
 	//a.Separator = "_"
 	fmt.Println(a.Convert(hans))
 
 	// 包含声调
-	a.SetStyle(pinyin.Style{pinyin.Tone3, pinyin.Normal})
+	a = pinyin.NewPinyin(pinyin.Style{pinyin.Tone3, pinyin.Normal}, Separator, false)
 	fmt.Println(a.Convert(hans))
 
 	// 声调用数字表示
-	a.SetStyle(pinyin.Style{pinyin.Tone2, pinyin.Normal})
+	a = pinyin.NewPinyin(pinyin.Style{pinyin.Tone2, pinyin.Normal}, Separator, false)
 	fmt.Println(a.Convert(hans))
 
 	// 声调在拼音后用数字表示
-	a.SetStyle(pinyin.Style{pinyin.Tone1, pinyin.Normal})
+	a = pinyin.NewPinyin(pinyin.Style{pinyin.Tone1, pinyin.Normal}, Separator, false)
 	fmt.Println(a.Convert(hans))
 
 	// 开启多音字模式
-	a.Polyphone = true
+	a = pinyin.NewPinyin(pinyin.Style{pinyin.Tone1, pinyin.Normal}, Separator, true)
 	fmt.Println(a.Convert(hans))
-	a.SetStyle(pinyin.Style{pinyin.Tone3, pinyin.Normal})
+	a = pinyin.NewPinyin(pinyin.Style{pinyin.Tone3, pinyin.Normal}, Separator, true)
 	fmt.Println(a.Convert(hans))
 
 	// Output:
