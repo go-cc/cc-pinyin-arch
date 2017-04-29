@@ -19,21 +19,21 @@ func Example_output() {
 	fmt.Println(a.Convert(hans))
 
 	// 包含声调
-	a.SetStyle(pinyin.Tone)
+	a.SetStyle(pinyin.Style{pinyin.Tone3, pinyin.Normal})
 	fmt.Println(a.Convert(hans))
 
 	// 声调用数字表示
-	a.SetStyle(pinyin.Tone2)
+	a.SetStyle(pinyin.Style{pinyin.Tone2, pinyin.Normal})
 	fmt.Println(a.Convert(hans))
 
 	// 声调在拼音后用数字表示
-	a.SetStyle(pinyin.Tone3)
+	a.SetStyle(pinyin.Style{pinyin.Tone1, pinyin.Normal})
 	fmt.Println(a.Convert(hans))
 
 	// 开启多音字模式
-	a.Heteronym = true
+	a.Polyphone = true
 	fmt.Println(a.Convert(hans))
-	a.SetStyle(pinyin.Tone)
+	a.SetStyle(pinyin.Style{pinyin.Tone3, pinyin.Normal})
 	fmt.Println(a.Convert(hans))
 
 	// Output:

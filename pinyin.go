@@ -14,18 +14,31 @@ const (
 	Copyright = "Copyright (c) 2016 mozillazg, 闲耘"
 )
 
-// 拼音风格(推荐)
+// == 拼音风格
 const (
-	Normal      = 0 // 普通风格，不带声调（默认风格）。如： zhong guo
-	Tone        = 1 // 声调风格1，拼音声调在韵母第一个字母上。如： zhōng guó
-	Tone2       = 2 // 声调风格2，即拼音声调在各个韵母之后，用数字 [1-4] 进行表示。如： zho1ng guo2
-	Tone3       = 8 // 声调风格3，即拼音声调在各个拼音之后，用数字 [1-4] 进行表示。如： zhong1 guo2
-	Initials    = 3 // 声母风格，只返回各个拼音的声母部分。如： zh g
-	FirstLetter = 4 // 首字母风格，只返回拼音的首字母部分。如： z g
-	Finals      = 5 // 韵母风格，只返回各个拼音的韵母部分，不带声调。如： ong uo
+	Normal = iota // 普通风格，不带声调（默认风格）。如： zhong guo
+)
+
+// -- 声调风格
+const (
+	_     = iota
+	Tone1 // 声调风格3，即拼音声调在各个拼音之后，用数字 [1-4] 进行表示。如： zhong1 guo2
+	Tone2 // 声调风格2，即拼音声调在各个韵母之后，用数字 [1-4] 进行表示。如： zho1ng guo2
+	Tone3 // 声调风格1，拼音声调在韵母第一个字母上。如： zhōng guó
+)
+
+// -- 部分返回
+const (
+	_           = iota
+	FirstLetter     // 首字母风格，只返回拼音的首字母部分。如： z g
+	Initials        // 声母风格，只返回各个拼音的声母部分。如： zh g
+	Finals      = 9 // 韵母风格，只返回各个拼音的韵母部分，不带声调。如： ong uo
+)
+
+const (
 	FinalsTone  = 6 // 韵母风格1，带声调，声调在韵母第一个字母上。如： ōng uó
 	FinalsTone2 = 7 // 韵母风格2，带声调，声调在各个韵母之后，用数字 [1-4] 进行表示。如： o1ng uo2
-	FinalsTone3 = 9 // 韵母风格3，带声调，声调在各个拼音之后，用数字 [1-4] 进行表示。如： ong1 uo2
+	FinalsTone1 = 8 // 韵母风格3，带声调，声调在各个拼音之后，用数字 [1-4] 进行表示。如： ong1 uo2
 )
 
 // 声母表
@@ -50,20 +63,25 @@ var rePhoneticSymbol = regexp.MustCompile("[" + rePhoneticSymbolSource + "]")
 var reTone2 = regexp.MustCompile("([aeoiuvnm])([1-4])$")
 
 // 匹配 Tone2 中标识韵母声调的正则表达式
-var reTone3 = regexp.MustCompile("^([a-z]+)([1-4])([a-z]*)$")
+var reTone1 = regexp.MustCompile("^([a-z]+)([1-4])([a-z]*)$")
+
+type Style struct {
+	Tone     int // 拼音风格（默认： Normal)
+	Truncate int // 部分返回
+}
 
 // Pinyin with 配置信息
 type Pinyin struct {
-	Style     int    // 拼音风格（默认： Normal)
-	Heteronym bool   // 是否启用多音字模式（默认：禁用）
+	Style
+	Polyphone bool   // 是否启用多音字模式（默认：禁用）
 	Separator string // Slug 中使用的分隔符（默认：-)
 }
 
-// Style 默认配置：风格
-var Style = Normal
+// Tone 默认配置：风格
+var Tone = Normal
 
-// Heteronym 默认配置：是否启用多音字模式
-var Heteronym = false
+// Polyphone 默认配置：是否启用多音字模式
+var Polyphone = false
 
 // Separator 默认配置： `Slug` 中 Join 所用的分隔符
 var Separator = " "
@@ -79,11 +97,12 @@ var reFinal2Exceptions = regexp.MustCompile("^(j|q|x)u(\\d?)$")
 
 // NewPinyin 返回包含默认配置的 `Pinyin`
 func NewPinyin() Pinyin {
-	return Pinyin{Style, Heteronym, Separator}
+	return Pinyin{Separator: Separator}
 }
 
-func (a *Pinyin) SetStyle(style int) {
-	a.Style = style
+func (a *Pinyin) SetStyle(s Style) {
+	a.Tone = s.Tone
+	a.Truncate = s.Truncate
 }
 
 // 获取单个拼音中的声母
@@ -135,7 +154,7 @@ func handleYW(p string) string {
 }
 
 func (a Pinyin) toFixed(p string) string {
-	if a.Style == Initials {
+	if a.Truncate == Initials {
 		return initial(p)
 	}
 	origP := p
@@ -143,12 +162,12 @@ func (a Pinyin) toFixed(p string) string {
 	// 替换拼音中的带声调字符
 	py := rePhoneticSymbol.ReplaceAllStringFunc(p, func(m string) string {
 		symbol, _ := phoneticSymbol[m]
-		switch a.Style {
+		switch a.Tone {
 		// 不包含声调
-		case Normal, FirstLetter, Finals:
+		case Normal:
 			// 去掉声调: a1 -> a
 			m = reTone2.ReplaceAllString(symbol, "$1")
-		case Tone2, FinalsTone2, Tone3, FinalsTone3:
+		case Tone2, FinalsTone2, Tone1, FinalsTone1:
 			// 返回使用数字标识声调的字符
 			m = symbol
 		default:
@@ -157,17 +176,17 @@ func (a Pinyin) toFixed(p string) string {
 		return m
 	})
 
-	switch a.Style {
+	switch a.Tone {
 	// 将声调移动到最后
-	case Tone3, FinalsTone3:
-		py = reTone3.ReplaceAllString(py, "$1$3$2")
+	case Tone1, FinalsTone1:
+		py = reTone1.ReplaceAllString(py, "$1$3$2")
 	}
-	switch a.Style {
+	switch a.Truncate {
 	// 首字母
 	case FirstLetter:
 		py = py[:1]
 	// 韵母
-	case Finals, FinalsTone, FinalsTone2, FinalsTone3:
+	case Finals, FinalsTone, FinalsTone2, FinalsTone1:
 		// 转换为 []rune unicode 编码用于获取第一个拼音字符
 		// 因为 string 是 utf-8 编码不方便获取第一个拼音字符
 		rs := []rune(origP)
@@ -195,10 +214,10 @@ func (a Pinyin) Convert(s string) string {
 			continue
 		}
 		firstComma := strings.Index(value, ",")
-		if !a.Heteronym && firstComma > 0 {
+		if !a.Polyphone && firstComma > 0 {
 			value = value[:firstComma]
 		}
-		if a.Heteronym && firstComma > 0 {
+		if a.Polyphone && firstComma > 0 {
 			value = strings.Replace(value, ",", "/", -1)
 		}
 		py := a.toFixed(value)
