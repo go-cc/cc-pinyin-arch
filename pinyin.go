@@ -6,12 +6,21 @@ import (
 	"strings"
 )
 
+// VERSION defines the running build id.
+var VERSION = "0.20.0"
+var buildTime = "2017-04-30"
+
 // Meta
 const (
-	Version   = "0.12.0"
-	Author    = "mozillazg, 闲耘"
+	Authors = `
+mozillazg, 闲耘
+suntong
+`
 	License   = "MIT"
-	Copyright = "Copyright (c) 2016 mozillazg, 闲耘"
+	Copyright = `
+Copyright (c) 2016 mozillazg, 闲耘
+Copyright (c) 2017 suntong
+`
 )
 
 // == 拼音风格
@@ -24,15 +33,15 @@ const (
 	_     = iota
 	Tone1 // 声调风格1，即拼音声调在各个拼音之后，用数字 [1-4] 进行表示。如： zhong1 guo2
 	Tone2 // 声调风格2，即拼音声调在各个韵母之后，用数字 [1-4] 进行表示。如： zho1ng guo2
-	Tone3 // 声调风格3，拼音声调在韵母第一个字母上。如： zhōng guó
+	Tone3 // 声调风格3，拼音声调在韵母上。如： zhōng guó
 )
 
 // -- 部分返回 Truncate
 const (
 	_           = iota
-	FirstLetter     // 首字母风格，只返回拼音的首字母部分。如： z g
-	Initials        // 声母风格，只返回各个拼音的声母部分。如： zh g
-	Finals      = 9 // 韵母风格，只返回各个拼音的韵母部分。如： ong uo
+	FirstLetter     // 1: 首字母风格，只返回拼音的首字母部分。如： z g
+	Initials        // 2: 声母风格，只返回各个拼音的声母部分。如： zh g
+	Finals      = 9 // 9: 韵母风格，只返回各个拼音的韵母部分。如： ong uo
 )
 
 // 声母表
