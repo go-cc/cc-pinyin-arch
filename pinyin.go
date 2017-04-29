@@ -19,26 +19,20 @@ const (
 	Normal = iota // 普通风格，不带声调（默认风格）。如： zhong guo
 )
 
-// -- 声调风格
+// -- 声调风格 Tone
 const (
 	_     = iota
-	Tone1 // 声调风格3，即拼音声调在各个拼音之后，用数字 [1-4] 进行表示。如： zhong1 guo2
+	Tone1 // 声调风格1，即拼音声调在各个拼音之后，用数字 [1-4] 进行表示。如： zhong1 guo2
 	Tone2 // 声调风格2，即拼音声调在各个韵母之后，用数字 [1-4] 进行表示。如： zho1ng guo2
-	Tone3 // 声调风格1，拼音声调在韵母第一个字母上。如： zhōng guó
+	Tone3 // 声调风格3，拼音声调在韵母第一个字母上。如： zhōng guó
 )
 
-// -- 部分返回
+// -- 部分返回 Truncate
 const (
 	_           = iota
 	FirstLetter     // 首字母风格，只返回拼音的首字母部分。如： z g
 	Initials        // 声母风格，只返回各个拼音的声母部分。如： zh g
-	Finals      = 9 // 韵母风格，只返回各个拼音的韵母部分，不带声调。如： ong uo
-)
-
-const (
-	FinalsTone  = 6 // 韵母风格1，带声调，声调在韵母第一个字母上。如： ōng uó
-	FinalsTone2 = 7 // 韵母风格2，带声调，声调在各个韵母之后，用数字 [1-4] 进行表示。如： o1ng uo2
-	FinalsTone1 = 8 // 韵母风格3，带声调，声调在各个拼音之后，用数字 [1-4] 进行表示。如： ong1 uo2
+	Finals      = 9 // 韵母风格，只返回各个拼音的韵母部分。如： ong uo
 )
 
 // 声母表
@@ -65,6 +59,7 @@ var reTone2 = regexp.MustCompile("([aeoiuvnm])([1-4])$")
 // 匹配 Tone2 中标识韵母声调的正则表达式
 var reTone1 = regexp.MustCompile("^([a-z]+)([1-4])([a-z]*)$")
 
+// Style 配置拼音风格 (声调风格 + 部分返回)
 type Style struct {
 	Tone     int // 拼音风格（默认： Normal)
 	Truncate int // 部分返回
@@ -74,16 +69,10 @@ type Style struct {
 type Pinyin struct {
 	Style
 	Polyphone bool   // 是否启用多音字模式（默认：禁用）
-	Separator string // Slug 中使用的分隔符（默认：-)
+	Separator string // 使用的分隔符（默认：" ")
 }
 
-// Tone 默认配置：风格
-var Tone = Normal
-
-// Polyphone 默认配置：是否启用多音字模式
-var Polyphone = false
-
-// Separator 默认配置： `Slug` 中 Join 所用的分隔符
+// Separator 默认配置：所用的分隔符
 var Separator = " "
 
 var finalExceptionsMap = map[string]string{
@@ -167,7 +156,7 @@ func (a Pinyin) toFixed(p string) string {
 		case Normal:
 			// 去掉声调: a1 -> a
 			m = reTone2.ReplaceAllString(symbol, "$1")
-		case Tone2, FinalsTone2, Tone1, FinalsTone1:
+		case Tone2, Tone1:
 			// 返回使用数字标识声调的字符
 			m = symbol
 		default:
@@ -178,7 +167,7 @@ func (a Pinyin) toFixed(p string) string {
 
 	switch a.Tone {
 	// 将声调移动到最后
-	case Tone1, FinalsTone1:
+	case Tone1:
 		py = reTone1.ReplaceAllString(py, "$1$3$2")
 	}
 	switch a.Truncate {
@@ -186,7 +175,7 @@ func (a Pinyin) toFixed(p string) string {
 	case FirstLetter:
 		py = py[:1]
 	// 韵母
-	case Finals, FinalsTone, FinalsTone2, FinalsTone1:
+	case Finals:
 		// 转换为 []rune unicode 编码用于获取第一个拼音字符
 		// 因为 string 是 utf-8 编码不方便获取第一个拼音字符
 		rs := []rune(origP)
@@ -201,6 +190,9 @@ func (a Pinyin) toFixed(p string) string {
 }
 
 // Convert 汉字转拼音，支持多音字模式.
+// If enabled Polyphone, then separate the returns with '/'.
+// E.g., for input like "我的银行不行", the output is
+// wo de yin hang/xing bu hang/xing.
 func (a Pinyin) Convert(s string) string {
 	pys := bytes.NewBufferString("")
 	for _, r := range s {
@@ -217,6 +209,7 @@ func (a Pinyin) Convert(s string) string {
 		if !a.Polyphone && firstComma > 0 {
 			value = value[:firstComma]
 		}
+		// 多音字模式 (Polyphone), output likes "hang/xing"
 		if a.Polyphone && firstComma > 0 {
 			value = strings.Replace(value, ",", "/", -1)
 		}
