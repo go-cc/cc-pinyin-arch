@@ -72,15 +72,16 @@ var reTone1 = regexp.MustCompile("^([a-z]+)([1-4])([a-z]*)$")
 
 // Style 配置拼音风格 (声调风格 + 部分返回)
 type Style struct {
-	Tone     int // 拼音风格（默认： Normal)
-	Truncate int // 部分返回
+	tone     int // 拼音风格（默认： Normal)
+	truncate int // 部分返回
 }
 
 // Pinyin with 配置信息
 type Pinyin struct {
 	Style
-	Separator string // 使用的分隔符（默认：" ")
-	Polyphone bool   // 是否启用多音字模式（默认：禁用）
+	Separator   string // 使用的分隔符（默认：" ")
+	polyphone   bool   // 是否启用多音字模式（默认：禁用）
+	capitalized bool   // 首字母大写
 
 	shaper *Shaper
 }
@@ -95,17 +96,16 @@ var reFinalExceptions = regexp.MustCompile("^(j|q|x)(ū|ú|ǔ|ù)$")
 var reFinal2Exceptions = regexp.MustCompile("^(j|q|x)u(\\d?)$")
 
 // NewPinyin 返回包含默认配置的 `Pinyin`
-func NewPinyin(s Style, separator string, polyphone bool) Pinyin {
-	a := Pinyin{Style: s,
-		//	a = Pinyin{
+func NewPinyin(tone, truncate int, separator string, _polyphone bool) Pinyin {
+	a := Pinyin{Style: Style{tone, truncate},
 		Separator: separator,
-		Polyphone: polyphone,
+		polyphone: _polyphone,
 	}
 	a.shaper = NewShaper()
-	if a.Truncate != Normal {
+	if a.truncate != Normal {
 		a.shaper.ApplyTruncate(a)
 	}
-	if a.Tone != Tone3 {
+	if a.tone != Tone3 {
 		a.shaper.ApplyToneShaping(a)
 	}
 	return a
@@ -143,7 +143,7 @@ func handleYW(p string) string {
 
 func (sp *Shaper) ApplyToneShaping(a Pinyin) *Shaper {
 	sp.AddFilter(func(p string) string {
-		if a.Truncate == Initials || a.Tone == Tone3 {
+		if a.truncate == Initials || a.tone == Tone3 {
 			// already shortened or no need to change
 			return p
 		}
@@ -151,7 +151,7 @@ func (sp *Shaper) ApplyToneShaping(a Pinyin) *Shaper {
 		// 替换拼音中的带声调字符
 		py := rePhoneticSymbol.ReplaceAllStringFunc(p, func(m string) string {
 			symbol, _ := phoneticSymbol[m]
-			switch a.Tone {
+			switch a.tone {
 			// 不包含声调
 			case Normal:
 				// 去掉声调: a1 -> a
@@ -165,7 +165,7 @@ func (sp *Shaper) ApplyToneShaping(a Pinyin) *Shaper {
 			return m
 		})
 
-		switch a.Tone {
+		switch a.tone {
 		// 将声调移动到最后
 		case Tone1:
 			py = reTone1.ReplaceAllString(py, "$1$3$2")
@@ -177,7 +177,7 @@ func (sp *Shaper) ApplyToneShaping(a Pinyin) *Shaper {
 
 func (sp *Shaper) ApplyTruncate(a Pinyin) *Shaper {
 	sp.AddFilter(func(p string) string {
-		if a.Truncate == FirstLetter {
+		if a.truncate == FirstLetter {
 			// 首字母
 			return p[:1]
 		}
@@ -192,7 +192,7 @@ func (sp *Shaper) ApplyTruncate(a Pinyin) *Shaper {
 			}
 		}
 
-		if a.Truncate == Initials {
+		if a.truncate == Initials {
 			// 声母风格
 			return s
 		}
@@ -245,11 +245,11 @@ func (a Pinyin) Convert(s string) string {
 			continue
 		}
 		firstComma := strings.Index(value, ",")
-		if !a.Polyphone && firstComma > 0 {
+		if !a.polyphone && firstComma > 0 {
 			value = value[:firstComma]
 		}
 		// 多音字模式 (Polyphone), output likes "hang/xing"
-		if a.Polyphone && firstComma > 0 {
+		if a.polyphone && firstComma > 0 {
 			value = strings.Replace(value, ",", "/", -1)
 		}
 		py := a.shaper.Process(value)
