@@ -96,10 +96,11 @@ var reFinalExceptions = regexp.MustCompile("^(j|q|x)(ū|ú|ǔ|ù)$")
 var reFinal2Exceptions = regexp.MustCompile("^(j|q|x)u(\\d?)$")
 
 // NewPinyin 返回包含默认配置的 `Pinyin`
-func NewPinyin(tone, truncate int, separator string, _polyphone bool) Pinyin {
+func NewPinyin(tone, truncate int, separator string, _polyphone, _capitalized bool) Pinyin {
 	a := Pinyin{Style: Style{tone, truncate},
-		Separator: separator,
-		polyphone: _polyphone,
+		Separator:   separator,
+		polyphone:   _polyphone,
+		capitalized: _capitalized,
 	}
 	a.shaper = NewShaper()
 	if a.truncate != Normal {
@@ -107,6 +108,9 @@ func NewPinyin(tone, truncate int, separator string, _polyphone bool) Pinyin {
 	}
 	if a.tone != Tone3 {
 		a.shaper.ApplyToneShaping(a)
+	}
+	if a.capitalized {
+		a.shaper.ApplyTitle()
 	}
 	return a
 }
@@ -121,7 +125,7 @@ type Shaper struct {
 
 // NewShaper makes a new Shaper filter
 func NewShaper() *Shaper {
-	return &Shaper{Shaper: shaper.NewFilter()}
+	return &Shaper{Shaper: shaper.NewShaper()}
 }
 
 // 处理 y, w
@@ -142,7 +146,7 @@ func handleYW(p string) string {
 }
 
 func (sp *Shaper) ApplyToneShaping(a Pinyin) *Shaper {
-	sp.AddFilter(func(p string) string {
+	sp.AddShaper(func(p string) string {
 		if a.truncate == Initials || a.tone == Tone3 {
 			// already shortened or no need to change
 			return p
@@ -176,7 +180,7 @@ func (sp *Shaper) ApplyToneShaping(a Pinyin) *Shaper {
 }
 
 func (sp *Shaper) ApplyTruncate(a Pinyin) *Shaper {
-	sp.AddFilter(func(p string) string {
+	sp.AddShaper(func(p string) string {
 		if a.truncate == FirstLetter {
 			// 首字母
 			return p[:1]

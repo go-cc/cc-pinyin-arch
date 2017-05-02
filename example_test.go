@@ -17,26 +17,26 @@ func Example_output() {
 	var a pinyin.Pinyin
 
 	// 默认
-	a = pinyin.NewPinyin(pinyin.Normal, pinyin.Normal, Separator, false)
+	a = pinyin.NewPinyin(pinyin.Normal, pinyin.Normal, Separator, false, false)
 	//a.Separator = "_"
 	fmt.Println(a.Convert(hans))
 
 	// 包含声调
-	a = pinyin.NewPinyin(pinyin.Tone3, pinyin.Normal, Separator, false)
+	a = pinyin.NewPinyin(pinyin.Tone3, pinyin.Normal, Separator, false, false)
 	fmt.Println(a.Convert(hans))
 
 	// 声调用数字表示
-	a = pinyin.NewPinyin(pinyin.Tone2, pinyin.Normal, Separator, false)
+	a = pinyin.NewPinyin(pinyin.Tone2, pinyin.Normal, Separator, false, false)
 	fmt.Println(a.Convert(hans))
 
 	// 声调在拼音后用数字表示
-	a = pinyin.NewPinyin(pinyin.Tone1, pinyin.Normal, Separator, false)
+	a = pinyin.NewPinyin(pinyin.Tone1, pinyin.Normal, Separator, false, false)
 	fmt.Println(a.Convert(hans))
 
 	// 开启多音字模式
-	a = pinyin.NewPinyin(pinyin.Tone1, pinyin.Normal, Separator, true)
+	a = pinyin.NewPinyin(pinyin.Tone1, pinyin.Normal, Separator, true, false)
 	fmt.Println(a.Convert(hans))
-	a = pinyin.NewPinyin(pinyin.Tone3, pinyin.Normal, Separator, true)
+	a = pinyin.NewPinyin(pinyin.Tone3, pinyin.Normal, Separator, true, false)
 	fmt.Println(a.Convert(hans))
 
 	// Output:
