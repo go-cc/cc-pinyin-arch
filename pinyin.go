@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////////////////////////////
+// Porgram: pinyin
+// Purpose: pinyin conversion Go library
+// Authors: Tong Sun (c) 2017, All rights reserved
+// Credits: Copyright (c) 2016 mozillazg, 闲耘
+// 	        https://github.com/mozillazg/go-pinyin/
+////////////////////////////////////////////////////////////////////////////
+
 package pinyin
 
 import (
@@ -11,19 +19,6 @@ import (
 // VERSION defines the running build id.
 var VERSION = "0.20.0"
 var buildTime = "2017-04-30"
-
-// Meta
-const (
-	Authors = `
-mozillazg, 闲耘
-suntong
-`
-	License   = "MIT"
-	Copyright = `
-Copyright (c) 2016 mozillazg, 闲耘
-Copyright (c) 2017 suntong
-`
-)
 
 // == 拼音风格
 const (
@@ -40,10 +35,11 @@ const (
 
 // -- 部分返回 Truncate
 const (
-	_           = iota
-	FirstLetter     // 1: 首字母风格，只返回拼音的首字母部分。如： z g
-	Initials        // 2: 声母风格，只返回各个拼音的声母部分。如： zh g
-	Finals      = 9 // 9: 韵母风格，只返回各个拼音的韵母部分。如： ong uo
+	_             = iota
+	FirstLetter       // 1: 首字母风格，只返回拼音的首字母部分。如： z g
+	Initials          // 2: 声母风格，只返回各个拼音的声母部分。如： zh g
+	ZeroConsonant = 8 // 8: 支持零声母功能, wén -> -> uén
+	Finals        = 9 // 9: 韵母风格，只返回各个拼音的韵母部分。如： ong uo, wén -> w -> én
 )
 
 // 声母表
@@ -101,6 +97,11 @@ func NewPinyin(tone, truncate int, separator string, _polyphone, _capitalized bo
 		Separator:   separator,
 		polyphone:   _polyphone,
 		capitalized: _capitalized,
+	}
+	if a.truncate == Finals {
+		// 简明整齐的处理声母韵母 ref mozillazg/go-pinyin/issues/18
+		// both y and w are considered 声母, add them back
+		initialArray = append(initialArray, "y", "w")
 	}
 	a.shaper = NewShaper()
 	if a.truncate != Normal {
@@ -210,6 +211,11 @@ func (sp *Shaper) ApplyTruncate(a Pinyin) *Shaper {
 		// 因为鼻音没有声母所以不需要去掉声母部分
 		case "ḿ", "ń", "ň", "ǹ":
 			return p
+		}
+
+		// 简明整齐的处理声母韵母
+		if a.truncate == Finals {
+			return y
 		}
 
 		// 获取拼音中的韵母
