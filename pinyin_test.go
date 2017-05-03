@@ -142,13 +142,14 @@ func TestUpdated(t *testing.T) {
 		// 误把 yu 放到声母列表了
 		{"鱼", NewPinyin(Tone2, Normal, Separator, false, false), "yu2 "},
 		{"鱼", NewPinyin(Tone1, Normal, Separator, false, false), "yu2 "},
-		// {"鱼", NewPinyin(Normal, ZeroConsonant, Separator, false, false), "v "},
+		{"鱼", NewPinyin(Normal, ZeroConsonant, Separator, false, false), "v "},
 		{"雨", NewPinyin(Tone2, Normal, Separator, false, false), "yu3 "},
 		{"雨", NewPinyin(Tone1, Normal, Separator, false, false), "yu3 "},
-		// {"雨", NewPinyin(Normal, ZeroConsonant, Separator, false, false), "v "},
+		{"雨", NewPinyin(Normal, ZeroConsonant, Separator, false, false), "v "},
+		{"元", NewPinyin(Tone3, Normal, Separator, false, false), "yuán "},
 		{"元", NewPinyin(Tone2, Normal, Separator, false, false), "yua2n "},
 		{"元", NewPinyin(Tone1, Normal, Separator, false, false), "yuan2 "},
-		// {"元", NewPinyin(Normal, ZeroConsonant, Separator, false, false), "van "},
+		{"元", NewPinyin(Normal, ZeroConsonant, Separator, false, false), "van "},
 		// y, w 也不是拼音, yu的韵母是v, yi的韵母是i, wu的韵母是u
 		// {"呀", NewPinyin(Normal, Initials, Separator, false, false), " "},
 		{"呀", NewPinyin(Tone2, Normal, Separator, false, false), "ya "},
@@ -207,8 +208,8 @@ func TestUpdated(t *testing.T) {
 		{"侵略", NewPinyin(Tone1, ZeroConsonant, Separator, false, false), "in1 ve4 "},
 		{"语文", NewPinyin(Tone1, Initials, Separator, false, false), "y w "},
 		{"语文", NewPinyin(Tone3, Initials, Separator, false, false), "y w "},
-		{"语文", NewPinyin(Tone1, Finals, Separator, false, false), "u3 en2 "},
-		{"语文", NewPinyin(Tone3, Finals, Separator, false, false), "ǔ én "},
+		{"语文", NewPinyin(Tone1, Finals, Separator, false, false), "v3 en2 "},
+		{"语文", NewPinyin(Tone3, Finals, Separator, false, false), "ǚ én "},
 	}
 	testPinyinUpdate(t, testData)
 }

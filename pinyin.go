@@ -88,8 +88,6 @@ var finalExceptionsMap = map[string]string{
 	"ǔ": "ǚ",
 	"ù": "ǜ",
 }
-var reFinalExceptions = regexp.MustCompile("^(j|q|x)(ū|ú|ǔ|ù)$")
-var reFinal2Exceptions = regexp.MustCompile("^(j|q|x)u(\\d?)$")
 
 // NewPinyin 返回包含默认配置的 `Pinyin`
 func NewPinyin(tone, truncate int, separator string, _polyphone, _capitalized bool) Pinyin {
@@ -98,7 +96,7 @@ func NewPinyin(tone, truncate int, separator string, _polyphone, _capitalized bo
 		polyphone:   _polyphone,
 		capitalized: _capitalized,
 	}
-	if a.truncate == Finals {
+	if a.truncate != ZeroConsonant {
 		// 简明整齐的处理声母韵母 ref mozillazg/go-pinyin/issues/18
 		// both y and w are considered 声母, add them back
 		initialArray = append(initialArray, "y", "w")
@@ -213,6 +211,18 @@ func (sp *Shaper) ApplyTruncate(a Pinyin) *Shaper {
 			return p
 		}
 
+		// ǖ 特例 j/q/x/y
+		matches := regexp.MustCompile("^(j|q|x|y)(ū|ú|ǔ|ù)$").FindStringSubmatch(p)
+		// jū -> jǖ
+		if len(matches) == 3 && matches[1] != "" && matches[2] != "" {
+			y, _ = finalExceptionsMap[matches[2]]
+		}
+		matches = regexp.MustCompile("^(j|q|x|y)(u)").FindStringSubmatch(p)
+		// yuán -> yván
+		if len(matches) == 3 && matches[1] != "" && matches[2] != "" {
+			y = "v" + p[2:] // yu -> v
+		}
+
 		// 简明整齐的处理声母韵母
 		if a.truncate == Finals {
 			return y
@@ -223,16 +233,6 @@ func (sp *Shaper) ApplyTruncate(a Pinyin) *Shaper {
 			y = handleYW(p)
 		}
 
-		// 特例 j/q/x
-		matches := reFinalExceptions.FindStringSubmatch(p)
-		// jū -> jǖ
-		if len(matches) == 3 && matches[1] != "" && matches[2] != "" {
-			y, _ = finalExceptionsMap[matches[2]]
-		} else {
-			// ju -> jv, ju1 -> jv1
-			p = reFinal2Exceptions.ReplaceAllString(p, "${1}v$2")
-			y = strings.Join(strings.SplitN(p, s, 2), "")
-		}
 		return y
 	})
 	return sp
