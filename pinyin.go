@@ -17,8 +17,10 @@ import (
 )
 
 // VERSION defines the running build id.
-var VERSION = "0.20.0"
-var buildTime = "2017-04-30"
+var (
+	VERSION   = "0.20.0"
+	buildTime = "2017-05-03"
+)
 
 // == 拼音风格
 const (
@@ -35,11 +37,10 @@ const (
 
 // -- 部分返回 Truncate
 const (
-	_             = iota
-	FirstLetter       // 1: 首字母风格，只返回拼音的首字母部分。如： z g
-	Initials          // 2: 声母风格，只返回各个拼音的声母部分。如： zh g
-	ZeroConsonant = 8 // 8: 支持零声母功能, wén -> -> uén
-	Finals        = 9 // 9: 韵母风格，只返回各个拼音的韵母部分。如： ong uo, wén -> w -> én
+	FirstLetter   = iota + 1 // 1: 首字母风格，只返回拼音的首字母部分。如： z g
+	Initials                 // 2: 声母风格，只返回各个拼音的声母部分。如： zh g
+	ZeroConsonant = iota + 6 // 8: 支持零声母功能, wén -> -> uén
+	Finals                   // 9: 韵母风格，只返回各个拼音的韵母部分。如： ong uo, wén -> w -> én
 )
 
 // 声母表
@@ -59,12 +60,6 @@ var rePhoneticSymbolSource = func(m map[string]string) string {
 
 // 匹配带声调字符的正则表达式
 var rePhoneticSymbol = regexp.MustCompile("[" + rePhoneticSymbolSource + "]")
-
-// 匹配使用数字标识声调的字符的正则表达式
-var reTone2 = regexp.MustCompile("([aeoiuvnm])([1-4])$")
-
-// 匹配 Tone2 中标识韵母声调的正则表达式
-var reTone1 = regexp.MustCompile("^([a-z]+)([1-4])([a-z]*)$")
 
 // Style 配置拼音风格 (声调风格 + 部分返回)
 type Style struct {
@@ -157,8 +152,9 @@ func (sp *Shaper) ApplyToneShaping(a Pinyin) *Shaper {
 			switch a.tone {
 			// 不包含声调
 			case Normal:
-				// 去掉声调: a1 -> a
-				m = reTone2.ReplaceAllString(symbol, "$1")
+				// 去掉声调: a1 -> a 匹配使用数字标识声调的字符的正则表达式
+				m = regexp.MustCompile("([aeoiuvnm])([1-4])$").
+					ReplaceAllString(symbol, "$1")
 			case Tone2, Tone1:
 				// 返回使用数字标识声调的字符
 				m = symbol
@@ -168,10 +164,10 @@ func (sp *Shaper) ApplyToneShaping(a Pinyin) *Shaper {
 			return m
 		})
 
-		switch a.tone {
-		// 将声调移动到最后
-		case Tone1:
-			py = reTone1.ReplaceAllString(py, "$1$3$2")
+		if a.tone == Tone1 {
+			// 将声调移动到最后. 匹配 Tone2 中标识韵母声调的正则表达式
+			py = regexp.MustCompile("^([a-z]+)([1-4])([a-z]*)$").
+				ReplaceAllString(py, "$1$3$2")
 		}
 		return py
 	})
