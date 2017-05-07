@@ -114,6 +114,10 @@ func TestPinyin(t *testing.T) {
 			NewPinyin(Tone1, Finals, Separator, false, true),
 			"Ong1 Uo2 En2 ",
 		},
+		{
+			NewPinyin(Tone3, Both, Separator, false, true),
+			"中(Zhōng) 国(Guó) 人(Rén) ",
+		},
 	}
 
 	testPinyin(t, hans, testData)

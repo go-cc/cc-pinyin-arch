@@ -10,6 +10,7 @@ package pinyin
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -41,6 +42,7 @@ const (
 	Initials                 // 2: 声母风格，只返回各个拼音的声母部分。如： zh g
 	ZeroConsonant = iota + 6 // 8: 支持零声母功能, wén -> -> uén
 	Finals                   // 9: 韵母风格，只返回各个拼音的韵母部分。如： ong uo, wén -> w -> én
+	Both          = 11       // 11: 双显风格，返回 汉字 + 拼音
 )
 
 // 声母表
@@ -176,6 +178,11 @@ func (sp *Shaper) ApplyToneShaping(a Pinyin) *Shaper {
 
 func (sp *Shaper) ApplyTruncate(a Pinyin) *Shaper {
 	sp.AddShaper(func(p string) string {
+		if a.truncate == Both {
+			// 双显风格，返回 全部拼音
+			return p
+		}
+
 		if a.truncate == FirstLetter {
 			// 首字母
 			return p[:1]
@@ -259,7 +266,12 @@ func (a Pinyin) Convert(s string) string {
 			value = strings.Replace(value, ",", "/", -1)
 		}
 		py := a.shaper.Process(value)
-		pys.WriteString(py + a.Separator)
+		if a.truncate == Both {
+			// 双显风格
+			fmt.Fprintf(pys, "%s(%s)%s", string(r), py, a.Separator)
+		} else {
+			pys.WriteString(py + a.Separator)
+		}
 	}
 	return pys.String()
 }

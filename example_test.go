@@ -39,6 +39,10 @@ func Example_output() {
 	a = pinyin.NewPinyin(pinyin.Tone3, pinyin.Normal, Separator, true, false)
 	fmt.Println(a.Convert(hans))
 
+	// 11: 双显风格，返回 汉字 + 拼音
+	a = pinyin.NewPinyin(pinyin.Tone3, pinyin.Both, Separator, false, true)
+	fmt.Println(a.Convert("中国银行。"))
+
 	// Output:
 	// MingZhu：《HongLouMeng》〖Qing〗CaoXueQin Zhu、GaoZuo Xu／『RenMinWenXue』ChuBanShe／1996—9Yue30Ri／59.70【Yuan】，《SanGuoYanYi》〖Ming〗LuoGuanZhong。
 	// ming-zhu-：《hong-lou-meng-》〖qing-〗cao-xue-qin- zhu-、gao-zuo- xu-／『ren-min-wen-xue-』chu-ban-she-／1996—9yue-30ri-／59.70【yuan-】，《san-guo-yan-yi-》〖ming-〗luo-guan-zhong-。
@@ -50,5 +54,5 @@ func Example_output() {
 	// zhong1 guo2 ren2 de 〖zhong1 guo2 yin2 xing2 〗，hen3 .xing2 .。
 	// zho1ng/zho4ng guo2 ren2 de/di4/di2 〖zho1ng/zho4ng guo2 yin2 xi2ng/ha2ng/xi4ng/ha4ng/he2ng 〗，hen3 .xi2ng/ha2ng/xi4ng/ha4ng/he2ng .。
 	// zhōng/zhòng guó rén de/dì/dí 〖zhōng/zhòng guó yín xíng/háng/xìng/hàng/héng 〗，hěn .xíng/háng/xìng/hàng/héng .。
-
+	// 中(Zhōng) 国(Guó) 银(Yín) 行(Xíng) 。
 }
